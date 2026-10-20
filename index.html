@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>영양제 상담 설문</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;600&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* 고객이 태블릿·휴대폰으로 직접 작성. 한 화면에 한 묶음씩, 큰 터치 버튼. 응답은 어디에도 저장·전송하지 않고 마지막 화면의 상담 코드로만 약사에게 건넨다. */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --tile:#E7ECE9; --ink:#14231F; --ink-2:#47584F; --ink-3:#76867F; --line:#D3DBD6;
+  --accent:#0C6650; --accent-ink:#FFFFFF; --accent-soft:#D9EBE4; --warn:#8A4B00; --warn-soft:#FBE9CC;
+  --f-display:"Hahmlet","Noto Serif KR","Apple SD Gothic Neo",serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1513; --surface:#161F1C; --tile:#222E2A; --ink:#E7EFEB; --ink-2:#AEBDB6; --ink-3:#7F8F88; --line:#2A3833;
+  --accent:#5FC6A6; --accent-ink:#06241B; --accent-soft:#17392F; --warn:#F0B866; --warn-soft:#3A2A10; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0E1513; --surface:#161F1C; --tile:#222E2A; --ink:#E7EFEB; --ink-2:#AEBDB6; --ink-3:#7F8F88; --line:#2A3833;
+  --accent:#5FC6A6; --accent-ink:#06241B; --accent-soft:#17392F; --warn:#F0B866; --warn-soft:#3A2A10; color-scheme:dark }
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+[hidden]{display:none!important}
+
+.wrap{max-width:760px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:600;font-size:18px}
+.cross{width:16px;height:16px;flex:none;background:var(--accent);
+  clip-path:polygon(35% 0,65% 0,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0 65%,0 35%,35% 35%)}
+.restart{border:0;background:none;color:var(--ink-3);font-size:14px;padding:8px 4px}
+.prog{height:6px;border-radius:3px;background:var(--tile);overflow:hidden}
+.prog u{display:block;height:100%;background:var(--accent);transition:width .2s}
+.step-n{font-size:13px;color:var(--ink-3);margin-top:8px}
+
+main{flex:1;display:flex;flex-direction:column;gap:28px;padding:22px 0 28px}
+h1.q{font-family:var(--f-display);font-weight:600;font-size:clamp(24px,4.4vw,30px);line-height:1.3;text-wrap:balance}
+.lead{color:var(--ink-2);font-size:16px;margin-top:8px;text-wrap:pretty}
+.block{display:grid;gap:12px}
+.block h2{font-size:17px;font-weight:600}
+.block h2 small{font-weight:400;color:var(--ink-3);font-size:14px;margin-left:6px}
+.g-cap{font-size:13px;color:var(--ink-3);letter-spacing:.04em;margin:6px 0 -4px}
+
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opts.col{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.opt{min-height:56px;padding:12px 18px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);text-align:left;
+  display:flex;align-items:center;gap:12px;line-height:1.35;transition:border-color .1s,background .1s}
+.opt .box{width:22px;height:22px;flex:none;border:1.5px solid var(--ink-3);border-radius:6px;display:grid;place-items:center}
+.opt.radio .box{border-radius:50%}
+.opt .tx{display:grid;gap:2px}
+.opt .tx small{font-size:13.5px;color:var(--ink-3)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent)}
+.opt[aria-pressed="true"] .box::after{content:"";width:10px;height:6px;border:2.5px solid var(--accent-ink);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.opt.radio[aria-pressed="true"] .box::after{width:8px;height:8px;border:0;border-radius:50%;background:var(--accent-ink);transform:none}
+.opt.none{border-style:dashed}
+.opt .rank{width:30px;height:30px;flex:none;border-radius:50%;border:1.5px solid var(--ink-3);display:grid;place-items:center;font-weight:600;font-size:15px;color:var(--ink-3)}
+.opt[aria-pressed="true"] .rank{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:15.5px;color:var(--ink-2);display:grid;gap:8px}
+.note b{color:var(--ink);font-weight:600}
+.note ul{margin:0;padding-left:20px;display:grid;gap:4px}
+
+.nav{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 4px;background:linear-gradient(to bottom,transparent,var(--bg) 18px)}
+.nav button{height:58px;border-radius:12px;font-weight:600;font-size:17px}
+.back{flex:0 0 auto;padding:0 22px;border:1.5px solid var(--line);background:var(--surface)}
+.next{flex:1;border:0;background:var(--accent);color:var(--accent-ink)}
+.next:disabled{opacity:.4;cursor:default}
+
+.done{display:grid;gap:22px;justify-items:center;text-align:center;padding-top:8px}
+.code{font-family:var(--f-mono);font-weight:500;font-size:clamp(26px,6.4vw,40px);letter-spacing:.06em;line-height:1.35;background:var(--surface);
+  border:2px solid var(--accent);border-radius:14px;padding:18px 20px;max-width:100%}
+.code span{white-space:nowrap}
+.opts.wide{grid-template-columns:minmax(0,1fr)}
+.done .lead{max-width:34em}
+.done .small{font-size:13.5px;color:var(--ink-3);max-width:36em}
+.done a{color:var(--accent)}
+.done .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.done .btns button{height:52px;padding:0 22px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:600}
+@media (prefers-reduced-motion:reduce){.prog u,.opt{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="cross" aria-hidden="true"></span>영양제 상담 설문</div>
+    <button class="restart" id="restart" type="button" hidden>처음부터</button>
+  </header>
+  <div id="progwrap" hidden>
+    <div class="prog" role="progressbar" aria-label="진행" id="prog"><u id="bar"></u></div>
+    <p class="step-n" id="stepn"></p>
+  </div>
+  <main id="main" aria-live="polite"></main>
+  <nav class="nav" id="nav">
+    <button class="back" id="back" type="button">이전</button>
+    <button class="next" id="next" type="button">다음</button>
+  </nav>
+</div>
+
+<script>
+/* SURVEY-CORE:BEGIN (_src/survey-core.js에서 생성) */
+/* 설문 문항 정의 + 상담 코드 인코딩/디코딩.
+   설문 페이지와 대시보드가 같은 내용을 쓴다. 이 파일을 고친 뒤 _src/build.py를 실행하면 두 HTML에 다시 들어간다.
+   주의: 각 목록의 순서가 곧 코드의 비트 위치다. 항목은 끝에만 추가하고, 순서를 바꾸거나 중간 항목을 지우지 말 것.
+   항목을 빼야 하면 hide:true로 숨긴다. 구조를 바꿔야 하면 VERSION을 올리고 decode에 이전 버전 분기를 둔다. */
+var SurveyCore = (function(){
+  var VERSION = 1;
+
+  var WHO = ['본인', '가족'];
+  // 나이 구간과 월령 범위 [최소, 최대]. 대시보드의 연령 금기(○세 미만, ○개월 미만) 판정에 쓴다.
+  var AGE = [
+    ['만 4세 미만', 0, 47], ['만 4~11세', 48, 143], ['만 12~14세', 144, 179], ['만 15~18세', 180, 227],
+    ['19~29세', 228, 359], ['30대', 360, 479], ['40대', 480, 599], ['50대', 600, 719], ['60대', 720, 839], ['70세 이상', 840, 1500]
+  ];
+  var SEX = ['여성', '남성'];
+  var FEM = ['임신 중', '임신 가능성 있음·임신 계획', '수유 중', '갱년기'];
+
+  // tag: 대시보드 건강 고민 태그 이름과 정확히 같아야 한다.
+  var CONCERNS = [
+    {tag:'피로·활력', label:'피로·체력 저하', g:'몸 전체'},
+    {tag:'면역', label:'면역력·잦은 감기', g:'몸 전체'},
+    {tag:'항산화', label:'노화 관리·항산화', g:'몸 전체'},
+    {tag:'빈혈·철', label:'빈혈·어지러움', g:'몸 전체'},
+    {tag:'뼈', label:'뼈 건강·골다공증', g:'뼈·근육·관절'},
+    {tag:'관절·연골', label:'관절·연골', g:'뼈·근육·관절'},
+    {tag:'근육·신경', label:'근육 경련·결림·신경통', g:'뼈·근육·관절'},
+    {tag:'혈행·혈중 지질', label:'혈액순환·중성지방', g:'혈관·대사'},
+    {tag:'혈압', label:'혈압', g:'혈관·대사'},
+    {tag:'혈당', label:'혈당', g:'혈관·대사'},
+    {tag:'정맥순환·치질', label:'다리 붓기·정맥·치질', g:'혈관·대사'},
+    {tag:'장·소화', label:'장 건강·소화·배변', g:'소화·간'},
+    {tag:'간', label:'간 건강', g:'소화·간'},
+    {tag:'기억력·인지', label:'기억력·집중력', g:'머리·마음'},
+    {tag:'수면·긴장 완화', label:'수면·스트레스·긴장', g:'머리·마음'},
+    {tag:'눈', label:'눈 피로·건조', g:'눈·피부·모발'},
+    {tag:'피부', label:'피부 (건조·기미 등)', g:'눈·피부·모발'},
+    {tag:'모발·손톱', label:'모발·손톱 (탈모 포함)', g:'눈·피부·모발'},
+    {tag:'구강·잇몸', label:'잇몸·구강', g:'기타'},
+    {tag:'여성', label:'여성 건강 (질 건강·갱년기)', g:'기타', sex:0},
+    {tag:'전립선·배뇨', label:'전립선·소변 불편', g:'기타', sex:1}
+  ];
+
+  // rx: 대시보드 제품의 병용 주의 문구(caut.drug)에서 찾을 말. ing: 함께 주의할 주성분(std).
+  var DRUGS = [
+    {label:'피를 묽게 하는 약', ex:'와파린, 아스피린, 클로피도그렐 등', rx:/항응고|항혈소판|와파린|아스피린/, ing:['비타민K', '오메가3(EPA+DHA)', '비타민E', '은행잎추출물'], subIng:['은행잎추출물', '오메가3(EPA+DHA)', '마늘유', '커큐민', '강황', '울금']},
+    {label:'혈압약', rx:/혈압강하|혈압약|항고혈압/},
+    {label:'이뇨제', ex:'스피로노락톤 등', rx:/항알도스테론|트리암테렌|이뇨/},
+    {label:'심장약', ex:'디곡신 등', rx:/강심|디곡신/},
+    {label:'당뇨약', rx:/당뇨|혈당강하|인슐린/},
+    {label:'고지혈증약', rx:/스타틴|고지혈/},
+    {label:'위장약·제산제', rx:/제산제/},
+    {label:'항생제 (현재 복용 중)', rx:/테트라사이클린|퀴놀론|클로람페니콜|사이클로세린|항생/},
+    {label:'수면제·신경안정제', rx:/수면제|신경안정|졸음|최면/},
+    {label:'우울증약·정신과 약', rx:/항우울|삼환계|페노티아진|리튬|항정신병/},
+    {label:'뇌전증(간질)약', rx:/히단토인|페니토인|페노바르비탈|프리미돈|발프로|카바마제핀|항경련|항뇌전증/},
+    {label:'파킨슨병약', rx:/레보도파/},
+    {label:'피임약·여성호르몬제', rx:/에스트로겐|경구피임/},
+    {label:'전립선약', rx:/알파차단/},
+    {label:'류마티스·면역억제제', ex:'메토트렉세이트 등', rx:/메토트렉세이트|설파살라진|면역억제|페니실라민/},
+    {label:'결핵약', rx:/이소니아지드|에티온아미드|사이클로세린/},
+    {label:'기타·이름을 모르는 약', ex:'약봉투나 처방전을 보여 주세요'}
+  ];
+
+  // rx: 금기(caut.ban)·상담(consult 등) 문구에서 찾을 말. soft: 금기 문구에 걸려도 제외하지 않고 '주의'로만 표시.
+  var DISEASES = [
+    {label:'신장(콩팥) 질환', rx:/신장질환|신장애|신부전|콩팥|신기능|신장 ?장애/},
+    {label:'신장결석 (과거 포함)', rx:/결석|수산뇨|옥살산뇨/},
+    {label:'간 질환·황달', rx:/간 ?질환|간기능|황달/},
+    {label:'담낭(쓸개) 질환', rx:/담낭|담도|쓸개/},
+    {label:'심장 질환·심근경색 (과거 포함)', rx:/심장|심근경색|순환기/},
+    {label:'혈전이 잘 생기는 편', rx:/혈전/},
+    {label:'당뇨', rx:/당뇨/},
+    {label:'고지혈증·췌장염', rx:/고지단백|고지질|췌장염|지방대사/},
+    {label:'통풍', rx:/통풍/},
+    {label:'위·십이지장 궤양, 장염 등 위장 질환', rx:/위장|궤양|대장염/},
+    {label:'고칼슘혈증', rx:/고칼슘|유육종/},
+    {label:'빈혈', rx:/빈혈|혈색소증|헤모시데린|지중해/, soft:true},
+    {label:'갑상선 질환', rx:/갑상선/},
+    {label:'뇌전증(간질)', rx:/뇌전증|간질(?!환)/},
+    {label:'자가면역 질환 (류마티스, 루푸스 등)', rx:/자가면역|결핵|백혈병|교원질|다발성 경화|HIV|AIDS|사르코이드/},
+    {label:'암 (치료 중 또는 과거)', rx:/암 ?환자|종양/},
+    {label:'유당불내증', rx:/유당|젖당|갈락토오스/},
+    {label:'페닐케톤뇨증·G6PD 결핍 등 선천 질환', rx:/페닐케톤뇨|G6PD|아스파탐/}
+  ];
+
+  // rx: 알레르기 표기(allergen)에 있으면 제외, 원재료(raw)에만 있으면 주의.
+  var ALLERGIES = [
+    {label:'콩·대두 / 땅콩', rx:/대두|콩|땅콩/},
+    {label:'우유', rx:/우유|유당|유청|카제인|밀크(?!씨슬)|유제품/},
+    {label:'조개류·갑각류', rx:/조개|홍합|굴추출|새우|갑각|게껍|키토산|글루코사민/},
+    {label:'생선', rx:/생선|어류|어유|피쉬|정어리|멸치|연어|참치/},
+    {label:'돼지 유래 성분 (젤라틴 캡슐 등)', rx:/돼지|젤라틴/},
+    {label:'색소 (황색5호, 카라멜색소 등)', rx:/황색|적색|청색|카라멜|색소/},
+    {label:'약을 먹고 알레르기가 난 적 있음'}
+  ];
+
+  // std: 대시보드 주성분(std) 이름. 이미 먹는 영양제와 겹치는 성분을 찾는 데 쓴다.
+  var SUPPS = [
+    {label:'종합비타민', std:['비타민A', '비타민B1', '비타민B2', '비타민B3', '비타민B6', '비타민B12', '비타민C', '비타민D', '비타민E', '엽산', '판토텐산', '비오틴', '아연', '셀렌', '마그네슘', '칼슘', '철', '구리', '망간', '크롬', '요오드']},
+    {label:'비타민B군', std:['비타민B1', '비타민B2', '비타민B3', '비타민B6', '비타민B12', '엽산', '판토텐산', '비오틴']},
+    {label:'비타민C', std:['비타민C']},
+    {label:'비타민D', std:['비타민D']},
+    {label:'칼슘', std:['칼슘']},
+    {label:'마그네슘', std:['마그네슘']},
+    {label:'아연', std:['아연']},
+    {label:'철분', std:['철']},
+    {label:'오메가3', std:['오메가3(EPA+DHA)']},
+    {label:'유산균', std:['프로바이오틱스']},
+    {label:'루테인', std:['루테인']},
+    {label:'밀크씨슬', std:['밀크씨슬']},
+    {label:'코엔자임Q10', std:['코엔자임Q10']},
+    {label:'콜라겐·비오틴', std:['콜라겐', '비오틴']},
+    {label:'홍삼·인삼', std:[]},
+    {label:'기타'}
+  ];
+
+  var SMOKE = ['피움', '안 피움'];
+  var ALCOHOL = ['거의 안 함', '주 1~2회', '주 3회 이상'];
+  var COFFEE = ['거의 안 마심', '하루 1~2잔', '하루 3잔 이상'];
+  var DAIRY = ['거의 안 먹음', '가끔', '매일'];
+  // forms: 대시보드 제형(form) 이름과 연결.
+  var FORMS = [
+    {label:'알약', forms:['정제']},
+    {label:'캡슐', forms:['연질캡슐', '캡슐제']},
+    {label:'마시는 액상', forms:['액제']},
+    {label:'씹어 먹는 형태', forms:['츄정']},
+    {label:'가루·과립', forms:['산제', '과립제']}
+  ];
+  var YESNO = ['예', '아니오'];
+  var TIMES = ['하루 1번만', '하루 2번까지', '상관없음'];
+  var SUPPLY = ['1개월', '2~3개월', '상관없음'];
+  var BUDGET = ['3만 원 이하', '3~5만 원', '5~10만 원', '상관없음'];
+
+  // ---- 코드 ----
+  // Crockford Base32: 헷갈리는 I L O U를 뺀 32자. 입력할 때 I·L은 1로, O는 0으로 읽는다.
+  var ABC = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  var MULTI = [['drugs', DRUGS], ['diseases', DISEASES], ['allergies', ALLERGIES], ['supps', SUPPS]];
+
+  function bitsFor(n){ var b = 0; while ((1 << b) < n) b++; return b; }
+  // 단일 선택은 0 = 무응답, 1.. = 선택지 번호+1
+  var SINGLE = [['who', WHO], ['age', AGE], ['sex', SEX], ['surgery', YESNO], ['smoke', SMOKE], ['alcohol', ALCOHOL],
+    ['coffee', COFFEE], ['dairy', DAIRY], ['bigpill', YESNO], ['times', TIMES], ['supply', SUPPLY], ['budget', BUDGET]];
+
+  function blank(){
+    var a = {fem:[], concerns:[], prio:[], forms:[]};
+    SINGLE.forEach(function(s){ a[s[0]] = -1; });
+    MULTI.forEach(function(m){ a[m[0]] = null; });   // null = 무응답, [] = 해당 없음, [i..] = 선택
+    return a;
+  }
+
+  function encode(a){
+    var bits = [];
+    function put(v, n){ for (var i = n - 1; i >= 0; i--) bits.push((v >> i) & 1); }
+    function putSet(arr, n){ for (var i = 0; i < n; i++) bits.push(arr.indexOf(i) >= 0 ? 1 : 0); }
+    put(VERSION, 4);
+    SINGLE.forEach(function(s){ put(a[s[0]] + 1, bitsFor(s[1].length + 1)); });
+    putSet(a.fem, FEM.length);
+    putSet(a.concerns, CONCERNS.length);
+    for (var i = 0; i < 3; i++) put(a.prio[i] == null ? 0 : a.prio[i] + 1, bitsFor(CONCERNS.length + 1));
+    putSet(a.forms, FORMS.length);
+    MULTI.forEach(function(m){
+      var v = a[m[0]];
+      put(v == null ? 0 : v.length ? 2 : 1, 2);
+      if (v && v.length) putSet(v, m[1].length);
+    });
+    while (bits.length % 5) bits.push(0);
+    var s = '';
+    for (var j = 0; j < bits.length; j += 5) s += ABC[bits[j] * 16 + bits[j + 1] * 8 + bits[j + 2] * 4 + bits[j + 3] * 2 + bits[j + 4]];
+    s = s.replace(/0+$/, '');           // 끝의 0은 지워도 디코딩 결과가 같다
+    return s + check(s);
+  }
+
+  function check(s){
+    var t = 0;
+    for (var i = 0; i < s.length; i++) t += (i + 1) * ABC.indexOf(s[i]);
+    return ABC[t % 32];
+  }
+
+  function clean(code){
+    return String(code || '').toUpperCase().replace(/[IL]/g, '1').replace(/O/g, '0').replace(/[^0-9A-Z]/g, '');
+  }
+
+  function decode(code){
+    var s = clean(code);
+    if (s.length < 3) throw new Error('코드가 너무 짧습니다.');
+    for (var k = 0; k < s.length; k++) if (ABC.indexOf(s[k]) < 0) throw new Error('코드에 쓸 수 없는 글자(' + s[k] + ')가 있습니다.');
+    var body = s.slice(0, -1);
+    if (check(body) !== s.slice(-1)) throw new Error('코드가 맞지 않습니다. 한 글자씩 다시 확인해 주세요.');
+    var bits = [];
+    for (var i = 0; i < body.length; i++){ var v = ABC.indexOf(body[i]); for (var b = 4; b >= 0; b--) bits.push((v >> b) & 1); }
+    var pos = 0;
+    function get(n){ var v = 0; for (var i = 0; i < n; i++) v = v * 2 + (bits[pos++] || 0); return v; }
+    function getSet(n){ var r = []; for (var i = 0; i < n; i++) if (get(1)) r.push(i); return r; }
+    var ver = get(4);
+    if (ver !== VERSION) throw new Error('설문 버전(' + ver + ')이 대시보드(' + VERSION + ')와 다릅니다.');
+    var a = blank();
+    SINGLE.forEach(function(s){ a[s[0]] = get(bitsFor(s[1].length + 1)) - 1; });
+    a.fem = getSet(FEM.length);
+    a.concerns = getSet(CONCERNS.length);
+    for (var j = 0; j < 3; j++){ var p = get(bitsFor(CONCERNS.length + 1)); if (p) a.prio.push(p - 1); }
+    a.forms = getSet(FORMS.length);
+    MULTI.forEach(function(m){
+      var st = get(2);
+      a[m[0]] = st === 0 ? null : st === 1 ? [] : getSet(m[1].length);
+    });
+    return a;
+  }
+
+  function pretty(code){ return clean(code).replace(/(.{4})(?=.)/g, '$1-'); }
+
+  return {
+    VERSION:VERSION, WHO:WHO, AGE:AGE, SEX:SEX, FEM:FEM, CONCERNS:CONCERNS, DRUGS:DRUGS, DISEASES:DISEASES,
+    ALLERGIES:ALLERGIES, SUPPS:SUPPS, SMOKE:SMOKE, ALCOHOL:ALCOHOL, COFFEE:COFFEE, DAIRY:DAIRY, FORMS:FORMS,
+    YESNO:YESNO, TIMES:TIMES, SUPPLY:SUPPLY, BUDGET:BUDGET,
+    blank:blank, encode:encode, decode:decode, pretty:pretty, clean:clean
+  };
+})();
+/* SURVEY-CORE:END */
+</script>
+<script>
+(function(){
+  var S = SurveyCore;
+  var A, step, consent;
+  var DASH = '영양제 상담 대시보드.html';   // 같은 폴더에 있을 때만 '약사용' 링크가 동작
+  // 웹에 올린 설문에는 대시보드가 없으므로 링크를 숨긴다(이 기기 파일·로컬 서버에서만 표시)
+  var LOCAL = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function $(id){ return document.getElementById(id); }
+
+  // ---- 문항 구성 요소 ----
+  // single: A[key]는 번호(-1 = 무응답). 같은 걸 다시 누르면 선택 해제.
+  function single(key, list, label, opt){
+    opt = opt || {};
+    var h = '<div class="block">' + (label ? '<h2>' + label + '</h2>' : '') + '<div class="opts' + (opt.col ? ' col' : '') + '">';
+    list.forEach(function(x, i){
+      var t = Array.isArray(x) ? x[0] : x;
+      h += '<button type="button" class="opt radio" data-single="' + key + '" data-i="' + i + '" aria-pressed="' + (A[key] === i) + '"><span class="box"></span><span class="tx">' + esc(t) + '</span></button>';
+    });
+    return h + '</div></div>';
+  }
+  // set: A[key]는 번호 배열(복수 선택).
+  function set(key, list, label, opt){
+    opt = opt || {};
+    var h = '<div class="block">' + (label ? '<h2>' + label + '</h2>' : '') + '<div class="opts col">';
+    list.forEach(function(x, i){
+      if (x.hide) return;
+      var t = typeof x === 'string' ? x : x.label;
+      h += '<button type="button" class="opt" data-set="' + key + '" data-i="' + i + '" aria-pressed="' + (A[key].indexOf(i) >= 0) + '"><span class="box"></span><span class="tx">' + esc(t) + (x.ex ? '<small>' + esc(x.ex) + '</small>' : '') + '</span></button>';
+    });
+    return h + '</div></div>';
+  }
+  // multi: '해당 없음'이 따로 있는 복수 선택. A[key]: null = 무응답, [] = 해당 없음, [i..] = 선택.
+  function multi(key, list, label, noneText){
+    var v = A[key];
+    var h = '<div class="block">' + (label ? '<h2>' + label + '</h2>' : '') + '<div class="opts col">' +
+      '<button type="button" class="opt none" data-none="' + key + '" aria-pressed="' + (v != null && v.length === 0) + '"><span class="box"></span><span class="tx">' + esc(noneText) + '</span></button>';
+    list.forEach(function(x, i){
+      if (x.hide) return;
+      h += '<button type="button" class="opt" data-multi="' + key + '" data-i="' + i + '" aria-pressed="' + (v != null && v.indexOf(i) >= 0) + '"><span class="box"></span><span class="tx">' + esc(x.label) + (x.ex ? '<small>' + esc(x.ex) + '</small>' : '') + '</span></button>';
+    });
+    return h + '</div></div>';
+  }
+  function head(q, lead){ return '<div><h1 class="q">' + q + '</h1>' + (lead ? '<p class="lead">' + lead + '</p>' : '') + '</div>'; }
+
+  // ---- 화면 ----
+  // show(): 이 화면을 보여줄지. 조건에 안 맞으면 건너뛴다.
+  var STEPS = [
+    {id:'intro', render:function(){
+      return head('맞춤 영양제 상담을 도와드릴게요', '몇 가지만 여쭙겠습니다. 3분 정도 걸리며, 모르시거나 답하기 싫은 문항은 건너뛰셔도 됩니다.') +
+        '<div class="note"><b>개인정보 안내</b><ul>' +
+        '<li>이름·연락처는 묻지 않습니다.</li>' +
+        '<li>응답은 이 기기에 저장되거나 인터넷으로 전송되지 않습니다. 마지막 화면의 <b>상담 코드</b>를 약사에게 보여 주시면 그 자리에서만 확인합니다.</li>' +
+        '<li>나이, 복용 중인 약, 질환, 알레르기 등 건강 정보를 여쭙는데, 이는 안전한 추천에만 사용합니다.</li></ul></div>' +
+        '<div class="block"><div class="opts wide"><button type="button" class="opt" id="consent" aria-pressed="' + consent + '"><span class="box"></span><span class="tx">위 내용을 확인했고, 상담을 위한 건강 정보 제공에 동의합니다.</span></button></div></div>';
+    }, ok:function(){ return consent; }},
+
+    {id:'basic', render:function(){
+      return head('먼저 기본 정보를 알려 주세요') + single('who', S.WHO, '복용하실 분') +
+        single('age', S.AGE, '나이', {col:true}) + single('sex', S.SEX, '성별');
+    }},
+
+    {id:'fem', show:function(){ return A.sex === 0 && (A.age < 0 || A.age >= 2); }, render:function(){
+      return head('해당하는 것이 있으면 골라 주세요', '임신·수유 중에는 피해야 할 성분이 있어 여쭙습니다.') + set('fem', S.FEM, '');
+    }},
+
+    {id:'concerns', render:function(){
+      var h = head('요즘 신경 쓰이는 건강 고민을 모두 골라 주세요');
+      var groups = [];
+      S.CONCERNS.forEach(function(c, i){
+        if (c.sex != null && A.sex >= 0 && c.sex !== A.sex) return;
+        var g = groups.filter(function(x){ return x.g === c.g; })[0];
+        if (!g){ g = {g:c.g, items:[]}; groups.push(g); }
+        g.items.push(i);
+      });
+      groups.forEach(function(g){
+        h += '<div class="block"><p class="g-cap">' + esc(g.g) + '</p><div class="opts col">' + g.items.map(function(i){
+          return '<button type="button" class="opt" data-set="concerns" data-i="' + i + '" aria-pressed="' + (A.concerns.indexOf(i) >= 0) + '"><span class="box"></span><span class="tx">' + esc(S.CONCERNS[i].label) + '</span></button>';
+        }).join('') + '</div></div>';
+      });
+      return h;
+    }},
+
+    {id:'prio', show:function(){ return A.concerns.length > 1; }, render:function(){
+      var h = head('가장 중요한 고민을 순서대로 눌러 주세요', '최대 3개까지 고를 수 있습니다. 다시 누르면 취소됩니다.') + '<div class="block"><div class="opts col">';
+      A.concerns.forEach(function(i){
+        var r = A.prio.indexOf(i);
+        h += '<button type="button" class="opt" data-prio="' + i + '" aria-pressed="' + (r >= 0) + '"><span class="rank">' + (r >= 0 ? r + 1 : '') + '</span><span class="tx">' + esc(S.CONCERNS[i].label) + '</span></button>';
+      });
+      return h + '</div></div>';
+    }},
+
+    {id:'drugs', render:function(){
+      return head('병원·약국에서 받아 정기적으로 드시는 약이 있나요?', '영양제와 함께 먹으면 안 되는 약이 있어 여쭙습니다. 이름을 모르시면 &lsquo;기타&rsquo;를 고르고 약봉투를 보여 주세요.') +
+        multi('drugs', S.DRUGS, '', '먹는 약 없음') + single('surgery', S.YESNO, '2주 안에 수술·시술 예정이 있나요?');
+    }},
+
+    {id:'diseases', render:function(){
+      return head('치료 중이거나 진단받은 적이 있는 것을 골라 주세요') + multi('diseases', S.DISEASES, '', '해당 없음');
+    }},
+
+    {id:'allergies', render:function(){
+      return head('알레르기가 있거나 피하시는 성분이 있나요?') + multi('allergies', S.ALLERGIES, '', '해당 없음');
+    }},
+
+    {id:'supps', render:function(){
+      return head('지금 드시는 영양제·건강식품이 있나요?', '같은 성분을 겹쳐 너무 많이 드시지 않도록 확인합니다. 제품을 갖고 계시면 약사에게 보여 주세요.') +
+        multi('supps', S.SUPPS, '', '먹는 영양제 없음');
+    }},
+
+    {id:'life', render:function(){
+      return head('생활 습관을 알려 주세요') + single('smoke', S.SMOKE, '흡연') + single('alcohol', S.ALCOHOL, '음주') +
+        single('coffee', S.COFFEE, '커피·녹차·홍차') + single('dairy', S.DAIRY, '우유·유제품');
+    }},
+
+    {id:'pref', render:function(){
+      return head('어떻게 드시는 게 편하세요?') + set('forms', S.FORMS, '편한 형태 <small>여러 개 골라도 됩니다</small>') +
+        single('bigpill', S.YESNO, '큰 알약을 삼키기 어려우신가요?') + single('times', S.TIMES, '하루에 몇 번까지 드실 수 있나요?') +
+        single('supply', S.SUPPLY, '한 번에 몇 개월분이 좋으세요?') + single('budget', S.BUDGET, '한 달 예산');
+    }},
+
+    {id:'done', render:function(){
+      var code = S.encode(A);
+      return '<div class="done">' + head('작성해 주셔서 감사합니다', '아래 상담 코드를 약사에게 보여 주세요.') +
+        '<p class="code" aria-label="상담 코드">' + S.pretty(code).split('-').map(function(g){ return '<span>' + esc(g) + '</span>'; }).join('-<wbr>') + '</p>' +
+        '<p class="small">이 코드에는 이름이나 연락처가 들어 있지 않습니다. 상담이 끝나면 &lsquo;처음부터&rsquo;를 눌러 지워 주세요. 10분 뒤에는 자동으로 지워집니다.</p>' +
+        '<div class="btns"><button type="button" id="edit">답변 고치기</button><button type="button" id="clear">처음부터</button></div>' +
+        (LOCAL ? '<p class="small">약사용: <a id="dash" href="' + encodeURI(DASH) + '#s=' + code + '">이 기기에서 대시보드로 열기</a></p>' : '') + '</div>';
+    }}
+  ];
+
+  function visible(){ return STEPS.filter(function(s){ return !s.show || s.show(); }); }
+
+  function reset(){ A = S.blank(); consent = false; step = 0; draw(); window.scrollTo(0, 0); }
+
+  function draw(){
+    var vs = visible(), s = vs[step];
+    $('main').innerHTML = s.render();
+    var isIntro = s.id === 'intro', isDone = s.id === 'done';
+    $('progwrap').hidden = isIntro || isDone;
+    $('restart').hidden = isIntro;
+    $('nav').hidden = isDone;
+    $('back').hidden = isIntro;
+    $('next').textContent = isIntro ? '시작하기' : step === vs.length - 2 ? '완료' : '다음';
+    $('next').disabled = s.ok ? !s.ok() : false;
+    var n = vs.length - 2, cur = step;
+    $('bar').style.width = Math.round(cur / n * 100) + '%';
+    $('stepn').textContent = cur + ' / ' + n;
+    $('prog').setAttribute('aria-valuenow', cur); $('prog').setAttribute('aria-valuemax', n);
+    clearTimeout(draw.t);
+    if (isDone) draw.t = setTimeout(reset, 10 * 60 * 1000);
+  }
+
+  function go(d){
+    var vs = visible(), cur = vs[step];
+    // 고민을 바꾸면 순위에서 빠진 항목 정리. 고민이 하나면 그게 1순위.
+    if (cur.id === 'concerns' || cur.id === 'basic'){
+      A.concerns = A.concerns.filter(function(i){ var c = S.CONCERNS[i]; return c.sex == null || A.sex < 0 || c.sex === A.sex; });
+      A.prio = A.prio.filter(function(i){ return A.concerns.indexOf(i) >= 0; });
+      if (A.concerns.length === 1) A.prio = A.concerns.slice();
+    }
+    if (cur.id === 'basic' && !(A.sex === 0 && (A.age < 0 || A.age >= 2))) A.fem = [];
+    var nvs = visible(), idx = nvs.indexOf(cur);
+    step = Math.max(0, Math.min(nvs.length - 1, idx + d));
+    draw(); window.scrollTo(0, 0);
+  }
+
+  function toggle(arr, i){ var k = arr.indexOf(i); if (k >= 0) arr.splice(k, 1); else arr.push(i); arr.sort(function(a, b){ return a - b; }); }
+
+  $('main').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var d = b.dataset, i = +d.i;
+    if (b.id === 'consent'){ consent = !consent; }
+    else if (b.id === 'clear'){ reset(); return; }
+    else if (b.id === 'edit'){ step = visible().length - 2; draw(); return; }
+    else if (d.single){ A[d.single] = A[d.single] === i ? -1 : i; }
+    else if (d.set){ toggle(A[d.set], i); }
+    else if (d.none){ A[d.none] = (A[d.none] && A[d.none].length === 0) ? null : []; }
+    else if (d.multi){ var v = A[d.multi] || []; toggle(v, i); A[d.multi] = v.length ? v : null; }
+    else if (d.prio){ var p = +d.prio, k = A.prio.indexOf(p); if (k >= 0) A.prio.splice(k, 1); else if (A.prio.length < 3) A.prio.push(p); }
+    var y = window.scrollY; draw(); window.scrollTo(0, y);
+  });
+  $('next').addEventListener('click', function(){ go(1); });
+  $('back').addEventListener('click', function(){ go(-1); });
+  $('restart').addEventListener('click', function(){ if (confirm('입력한 내용을 지우고 처음부터 할까요?')) reset(); });
+
+  // 3분 동안 손대지 않으면 처음 화면으로(공용 태블릿에서 다음 손님에게 이전 답이 보이지 않도록). 완료 화면은 10분.
+  var idle;
+  function poke(){ clearTimeout(idle); idle = setTimeout(function(){ var s = visible()[step]; if (s.id !== 'intro' && s.id !== 'done') reset(); }, 3 * 60 * 1000); }
+  ['click', 'touchstart', 'keydown', 'scroll'].forEach(function(ev){ document.addEventListener(ev, poke, {passive:true}); });
+
+  reset(); poke();
+})();
+</script>
+</body>
+</html>
