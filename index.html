@@ -78,6 +78,9 @@ h1.q{font-family:var(--f-display);font-weight:600;font-size:clamp(24px,4.4vw,30p
 .code{font-family:var(--f-mono);font-weight:500;font-size:clamp(26px,6.4vw,40px);letter-spacing:.06em;line-height:1.35;background:var(--surface);
   border:2px solid var(--accent);border-radius:14px;padding:18px 20px;max-width:100%}
 .code span{white-space:nowrap}
+.code.no{font-size:clamp(48px,14vw,84px);padding:10px 34px;letter-spacing:0}
+.code.no small{font-size:.4em;margin-left:4px}
+.code.sub{font-size:clamp(15px,3.6vw,20px);border-width:1px;border-color:var(--line);color:var(--ink-3);padding:8px 14px}
 .opts.wide{grid-template-columns:minmax(0,1fr)}
 .done .lead{max-width:34em}
 .done .small{font-size:13.5px;color:var(--ink-3);max-width:36em}
@@ -330,6 +333,8 @@ var SurveyCore = (function(){
   var A, step, consent;
   var DASH = '영양제 상담 대시보드.html';   // 같은 폴더에 있을 때만 '약사용' 링크가 동작
   // 웹에 올린 설문에는 대시보드가 없으므로 링크를 숨긴다(이 기기 파일·로컬 서버에서만 표시)
+  // 응답을 받을 구글 Apps Script 웹 앱 주소 (_src/endpoint.txt에서 build.py가 채운다)
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbzweiz2t0b2kYEOV36S__dI2bJORzE0k0OCnxIzGeLV0T4PEKhbc2DVPKt-Hxz1N5GiIQ/exec';
   var LOCAL = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -377,9 +382,9 @@ var SurveyCore = (function(){
       return head('맞춤 영양제 상담을 도와드릴게요', '몇 가지만 여쭙겠습니다. 3분 정도 걸리며, 모르시거나 답하기 싫은 문항은 건너뛰셔도 됩니다.') +
         '<div class="note"><b>개인정보 안내</b><ul>' +
         '<li>이름·연락처는 묻지 않습니다.</li>' +
-        '<li>응답은 이 기기에 저장되거나 인터넷으로 전송되지 않습니다. 마지막 화면의 <b>상담 코드</b>를 약사에게 보여 주시면 그 자리에서만 확인합니다.</li>' +
+        '<li>응답은 이름 없이 우리 약국으로만 전달되어 상담에 쓰이고, 90일이 지나면 지웁니다. 이 기기에는 남지 않습니다.</li>' +
         '<li>나이, 복용 중인 약, 질환, 알레르기 등 건강 정보를 여쭙는데, 이는 안전한 추천에만 사용합니다.</li></ul></div>' +
-        '<div class="block"><div class="opts wide"><button type="button" class="opt" id="consent" aria-pressed="' + consent + '"><span class="box"></span><span class="tx">위 내용을 확인했고, 상담을 위한 건강 정보 제공에 동의합니다.</span></button></div></div>';
+        '<div class="block"><div class="opts wide"><button type="button" class="opt" id="consent" aria-pressed="' + consent + '"><span class="box"></span><span class="tx">위 내용을 확인했고, 상담을 위한 건강 정보 수집·이용에 동의합니다.</span></button></div></div>';
     }, ok:function(){ return consent; }},
 
     {id:'basic', render:function(){
@@ -447,18 +452,40 @@ var SurveyCore = (function(){
     }},
 
     {id:'done', render:function(){
-      var code = S.encode(A);
-      return '<div class="done">' + head('작성해 주셔서 감사합니다', '아래 상담 코드를 약사에게 보여 주세요.') +
-        '<p class="code" aria-label="상담 코드">' + S.pretty(code).split('-').map(function(g){ return '<span>' + esc(g) + '</span>'; }).join('-<wbr>') + '</p>' +
-        '<p class="small">이 코드에는 이름이나 연락처가 들어 있지 않습니다. 상담이 끝나면 &lsquo;처음부터&rsquo;를 눌러 지워 주세요. 10분 뒤에는 자동으로 지워집니다.</p>' +
+      var code = S.encode(A), st = sent[code];
+      var msg = !ENDPOINT ? '아래 상담 코드를 약사에게 보여 주세요.'
+        : !st || st.state === 'sending' ? '약국으로 보내는 중입니다…'
+        : st.state === 'ok' ? '약국으로 전달했습니다. 약사에게 <b>접수번호</b>를 말씀해 주세요.'
+        : '전송하지 못했습니다. 아래 상담 코드를 약사에게 보여 주세요.';
+      var h = '<div class="done">' + head('작성해 주셔서 감사합니다', msg);
+      if (st && st.state === 'ok') h += '<p class="code no" aria-label="접수번호">' + esc(st.no) + '<small>번</small></p>';
+      h += '<p class="' + (st && st.state === 'ok' ? 'code sub' : 'code') + '" aria-label="상담 코드">' + S.pretty(code).split('-').map(function(g){ return '<span>' + esc(g) + '</span>'; }).join('-<wbr>') + '</p>';
+      if (st && st.state === 'fail') h += '<div class="btns"><button type="button" id="resend">다시 보내기</button></div>';
+      h += '<p class="small">이름이나 연락처는 들어 있지 않습니다. 상담이 끝나면 &lsquo;처음부터&rsquo;를 눌러 지워 주세요. 10분 뒤에는 자동으로 지워집니다.</p>' +
         '<div class="btns"><button type="button" id="edit">답변 고치기</button><button type="button" id="clear">처음부터</button></div>' +
         (LOCAL ? '<p class="small">약사용: <a id="dash" href="' + encodeURI(DASH) + '#s=' + code + '">이 기기에서 대시보드로 열기</a></p>' : '') + '</div>';
+      return h;
     }}
   ];
 
   function visible(){ return STEPS.filter(function(s){ return !s.show || s.show(); }); }
 
-  function reset(){ A = S.blank(); consent = false; step = 0; draw(); window.scrollTo(0, 0); }
+  // ---- 약국으로 전송 ----
+  // 응답 코드만 보낸다. 돌아오는 것은 접수번호뿐이고, 추천 결과는 약국 쪽에서만 계산·확인한다.
+  var sent = {}, rev = 0;
+  function send(code){
+    if (!ENDPOINT || (sent[code] && sent[code].state !== 'fail')) return;
+    sent[code] = {state:'sending'};
+    var ctl = window.AbortController ? new AbortController() : null;
+    var t = setTimeout(function(){ if (ctl) ctl.abort(); }, 20000);
+    fetch(ENDPOINT, {method:'POST', body:JSON.stringify({code:code, rev:rev}), signal:ctl ? ctl.signal : undefined})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ sent[code] = j && j.ok ? {state:'ok', no:j.no} : {state:'fail'}; })
+      .catch(function(){ sent[code] = {state:'fail'}; })
+      .then(function(){ clearTimeout(t); if (visible()[step].id === 'done') draw(); });
+  }
+
+  function reset(){ A = S.blank(); consent = false; step = 0; sent = {}; rev = 0; draw(); window.scrollTo(0, 0); }
 
   function draw(){
     var vs = visible(), s = vs[step];
@@ -475,7 +502,7 @@ var SurveyCore = (function(){
     $('stepn').textContent = cur + ' / ' + n;
     $('prog').setAttribute('aria-valuenow', cur); $('prog').setAttribute('aria-valuemax', n);
     clearTimeout(draw.t);
-    if (isDone) draw.t = setTimeout(reset, 10 * 60 * 1000);
+    if (isDone){ draw.t = setTimeout(reset, 10 * 60 * 1000); send(S.encode(A)); }
   }
 
   function go(d){
@@ -499,7 +526,8 @@ var SurveyCore = (function(){
     var d = b.dataset, i = +d.i;
     if (b.id === 'consent'){ consent = !consent; }
     else if (b.id === 'clear'){ reset(); return; }
-    else if (b.id === 'edit'){ step = visible().length - 2; draw(); return; }
+    else if (b.id === 'edit'){ rev++; step = visible().length - 2; draw(); return; }
+    else if (b.id === 'resend'){ sent[S.encode(A)] = {state:'fail'}; send(S.encode(A)); draw(); return; }
     else if (d.single){ A[d.single] = A[d.single] === i ? -1 : i; }
     else if (d.set){ toggle(A[d.set], i); }
     else if (d.none){ A[d.none] = (A[d.none] && A[d.none].length === 0) ? null : []; }
